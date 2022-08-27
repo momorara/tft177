@@ -42,7 +42,7 @@ def setup():
     GPIO.setup(LEDPIN2,GPIO.OUT,initial=GPIO.LOW)
 
 def LedUpDown(on_off):
-    j = int(10 / (on_off + 0.5))
+    j = 3
     for i in range(j):
         GPIO.output(LEDPIN,GPIO.HIGH)
         time.sleep(on_off)
@@ -50,7 +50,7 @@ def LedUpDown(on_off):
         time.sleep(0.5)
 
 def LedUpDown2(on_off):
-    j = int(5 / (on_off + 0.5))
+    j = 3
     for i in range(j):
         GPIO.output(LEDPIN2,GPIO.HIGH)
         time.sleep(on_off)
@@ -61,7 +61,7 @@ def LedUpDown2(on_off):
 def main():
     #print info
     print_message()
-    while True:
+    for i in range(3):
        LedUpDown(0.2)
        LedUpDown(0.5)
 
@@ -69,7 +69,7 @@ def main():
 
        LedUpDown2(0.2)
        LedUpDown2(0.5)
-    pass
+
 
 #define a destroy function for clean up everything after the script finished
 def destroy():
