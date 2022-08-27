@@ -8,6 +8,7 @@
 実際に活用する場合は、test_tft_*_.pyを参考にlcd177.pyを活用してください。
 
 スイッチ2個、LED2個の使用については、回路図にGPIOの番号を記載していますので、UIとして使ってください。
+test_sw.py、test_LED.pyでチェックができます。
 
 関係ファイルは以下でダウンロードしてください。
 git clone https://github.com/momorara/tft177 
