@@ -50,7 +50,7 @@ def LedUpDown(on_off):
         time.sleep(0.5)
 
 def LedUpDown2(on_off):
-    j = int(10 / (on_off + 0.5))
+    j = int(5 / (on_off + 0.5))
     for i in range(j):
         GPIO.output(LEDPIN2,GPIO.HIGH)
         time.sleep(on_off)
@@ -62,13 +62,13 @@ def main():
     #print info
     print_message()
     while True:
+       LedUpDown(0.2)
        LedUpDown(0.5)
-       LedUpDown(1.0)
 
        time.sleep(0.5)
 
+       LedUpDown2(0.2)
        LedUpDown2(0.5)
-       LedUpDown2(1.0)
     pass
 
 #define a destroy function for clean up everything after the script finished
