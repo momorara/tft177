@@ -36,17 +36,17 @@ def setup():
 #read SW_PI_1's level
 def ReadSW_1():
     if (GPIO.input(SW_PIN_1)):
-        sw_ = 'off'
-    else:
         sw_ = 'on'
+    else:
+        sw_ = 'off'
     return sw_
 
 #read SW_PI_2's level
 def ReadSW_2():
     if (GPIO.input(SW_PIN_2)):
-        sw_ = 'off'
-    else:
         sw_ = 'on'
+    else:
+        sw_ = 'off'
     return sw_
 
 #main function
