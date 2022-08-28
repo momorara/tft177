@@ -33,19 +33,13 @@ def main():
 
     lcd177.init('on')
 
-    dsp_file = "cat.jpg"
-    lcd177.dsp_file(dsp_file)
-    time.sleep(1)
-    lcd177.init('reset')
-
-    dsp_file = "cat1.jpg"
-    lcd177.dsp_file(dsp_file)
-    time.sleep(1)
-    lcd177.init('reset')
-
+    for i in range(1,8):
+        dsp_file = "/home/pi/tft177/photo/ph_" + str(i) + ".JPG"
+        lcd177.dsp_file(dsp_file)
+        time.sleep(2)
 
     lcd177.init('reset')    
-    time.sleep(2)
+    time.sleep(1)
     lcd177.init('off')
 
 
