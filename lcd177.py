@@ -114,9 +114,6 @@ def init(ini):
 
     # 画面リセット カーソルを原点に戻す
     if ini == 'reset':
-        # disp_lcd_177.image(image)
-        # dsp_frame_reset()
-        print('reset')
         # 画面を消去
         draw.rectangle((0, 0, width, height), outline=0, fill=0)
         # カーソルを原点に戻す
