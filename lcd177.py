@@ -18,11 +18,11 @@ not support PIL/pillow (python imaging library)!
             日本語対応
 2022/04/10  関数化してみる
     lcd177.pyとして関数化
-    lcd177.init('on')     として表示開始　バックライト点灯
+    lcd177.init('on')     として表示開始 バックライト点灯
     lcd177.disp('message')として表示する
-    lcd177.size(16)       としてフォントサイズ指定　デフォルト 12
-    lcd177.color('green') として文字色指定　デフォルト 白 ,#0000FFも可能
-    lcd177.init('off')    として表示終了　バックライト消灯
+    lcd177.size(16)       としてフォントサイズ指定 デフォルト 12
+    lcd177.color('green') として文字色指定 デフォルト 白 ,#0000FFも可能
+    lcd177.init('off')    として表示終了 バックライト消灯
     lcd177.init('reset')  として液晶をリセット
     lcd177.disp('message',size,color)size指定、色指定も可能
                 colorは white,blue,red,greenが使える
@@ -32,10 +32,10 @@ not support PIL/pillow (python imaging library)!
             固定設定
             DISP_rotation:0,90,180,270で指定
 
-
 2022/04/11  lcd177.image_f(画像ファイルパス)
 2022/04/14  pin整理
 2022/06/17  整理、関数名修正
+2022/10/10  init('reset')にバグ 修正した。
 """
 import time
 import subprocess
@@ -112,10 +112,18 @@ def init(ini):
         GPIO.output(backlight_pin,GPIO.LOW)
         # print('ini-off')
 
-    # 液晶リセット 0,0,0を書き込む
+    # 画面リセット カーソルを原点に戻す
     if ini == 'reset':
-        disp_lcd_177.image(image)
-        
+        # disp_lcd_177.image(image)
+        # dsp_frame_reset()
+        print('reset')
+        # 画面を消去
+        draw.rectangle((0, 0, width, height), outline=0, fill=0)
+        # カーソルを原点に戻す
+        global disp_x,disp_y
+        disp_y = -2
+        disp_x = 0
+
 
 def disp(mes,size=1,color='no'):
     # サイズ、色を指定してdispを呼んだ場合は、その指定に従い
@@ -217,8 +225,6 @@ def dsp_frame(frame):
 
     # 画像データを表示します。
     disp_lcd_177.image(image)
-
-
 
 def main():
 
