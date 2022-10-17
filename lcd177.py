@@ -36,6 +36,7 @@ not support PIL/pillow (python imaging library)!
 2022/04/14  pin整理
 2022/06/17  整理、関数名修正
 2022/10/10  init('reset')にバグ 修正した。
+
 """
 import time
 import subprocess
@@ -118,6 +119,9 @@ def init(ini):
         draw.rectangle((0, 0, width, height), outline=0, fill=0)
         # カーソルを原点に戻す
         global disp_x,disp_y
+        disp_y = -2
+        disp_x = 0
+        disp('    ',48)
         disp_y = -2
         disp_x = 0
 
