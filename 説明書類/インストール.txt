@@ -1,0 +1,67 @@
+インストール v0.2 
+
+2023/07/29
+bullseye 11.1,11.2,11.6,11.7
+Buster 10.10
+Buster 10.9
+
+システムをインストール
+
+リポジトリのsensorHAT3をダウンロード
+git clone https://github.com/momorara/sensorHAT3 sensorHAT
+
+i2cを使用できるようにする。
+sudo raspi-config等で、設定
+
+>>i2cデバイスとして認識されているか確認
+i2cdetect -y 1
+として、
+AHT10:38 BMP180:77が あればハードウェアの認識としてＯＫ
+
+>>BMP180ライブラリのインストール
+git clone https://github.com/adafruit/Adafruit_Python_BMP.git
+cd Adafruit_Python_BMP
+sudo python3 setup.py install
+cd examples/
+python3 simpletest.py
+>>成功していれば、気圧が表示される。
+(例)
+Temp = 25.20 *C
+Pressure = 102113.00 Pa
+Altitude = -64.74 m
+Sealevel Pressure = 102096.00 Pa
+
+cd sensorHAT
+python3 AHT10_dataSave02.py
+として、温度と湿度が表示されればＯＫ
+(例)
+30.1
+27
+Temperature: 30.1 C  Humidity: 27.0 %
+
+***node-redのインストール
+まず、
+node-red-pi --max-old-space-size=256
+として、node-redが起動するならインスト済なので、
+次の行はスキップしてください。
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
+
+node-red-dashboard	UI用のフロー
+node-red-contrib-calc	計算用のフロー
+をパレットの管理で追加する。
+
+***センサーui用のフローを読み込む
+flows.json
+
+***cronの設定
+crontab - pi.txtの内容をcrontab -e で、コピペする。
+
+reboot
+
+Copyright (c) 2021 Takanobu Kawabata
+Released under the MIT license
+https://github.com/YukinobuKurata/YouTubeMagicBuyButton/blob/master/MIT-LICENSE.txt
+
+***SR04についてはsensorHAT3ディレクトリのコピーのみで動作可能
+
+***BMP180についてはi2cの設定とライブラリのインストールが必要
