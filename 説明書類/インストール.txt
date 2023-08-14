@@ -1,67 +1,31 @@
-ƒCƒ“ƒXƒg[ƒ‹ v0.2 
 
-2023/07/29
-bullseye 11.1,11.2,11.6,11.7
-Buster 10.10
-Buster 10.9
+ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«(ä»¥ä¸‹ã®ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã—ã¦ãã ã•ã„ã€‚)
 
-ƒVƒXƒeƒ€‚ğƒCƒ“ƒXƒg[ƒ‹
+sudo apt install python3-pip 
+sudo pip3 install adafruit-circuitpython-rgb-display
+sudo apt install python3-pil 
+sudo apt-get install fonts-dejavu
+sudo apt-get install fonts-ipafont
 
-ƒŠƒ|ƒWƒgƒŠ‚ÌsensorHAT3‚ğƒ_ƒEƒ“ƒ[ƒh
-git clone https://github.com/momorara/sensorHAT3 sensorHAT
 
-i2c‚ğg—p‚Å‚«‚é‚æ‚¤‚É‚·‚éB
-sudo raspi-config“™‚ÅAİ’è
+ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã®ç¢ºèª(ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã§ã‚¨ãƒ©ãƒ¼ãŒãªã‘ã‚Œã°ä¸è¦)
+python3
+import PIL
+import adafruit_rgb_display
 
->>i2cƒfƒoƒCƒX‚Æ‚µ‚Ä”F¯‚³‚ê‚Ä‚¢‚é‚©Šm”F
-i2cdetect -y 1
-‚Æ‚µ‚ÄA
-AHT10:38 BMP180:77‚ª ‚ ‚ê‚Îƒn[ƒhƒEƒFƒA‚Ì”F¯‚Æ‚µ‚Ä‚n‚j
 
->>BMP180ƒ‰ƒCƒuƒ‰ƒŠ‚ÌƒCƒ“ƒXƒg[ƒ‹
-git clone https://github.com/adafruit/Adafruit_Python_BMP.git
-cd Adafruit_Python_BMP
-sudo python3 setup.py install
-cd examples/
-python3 simpletest.py
->>¬Œ÷‚µ‚Ä‚¢‚ê‚ÎA‹Cˆ³‚ª•\¦‚³‚ê‚éB
-(—á)
-Temp = 25.20 *C
-Pressure = 102113.00 Pa
-Altitude = -64.74 m
-Sealevel Pressure = 102096.00 Pa
+SPIé€šä¿¡ã®æœ‰åŠ¹åŒ–
+sudo raspi-configã€€ã¨ã—ã¦
+interface optionã‚’é¸ã³spiã‚’æœ‰åŠ¹ã«ã—ã¦ãã ã•ã„ã€‚
 
-cd sensorHAT
-python3 AHT10_dataSave02.py
-‚Æ‚µ‚ÄA‰·“x‚Æ¼“x‚ª•\¦‚³‚ê‚ê‚Î‚n‚j
-(—á)
-30.1
-27
-Temperature: 30.1 C  Humidity: 27.0 %
 
-***node-red‚ÌƒCƒ“ƒXƒg[ƒ‹
-‚Ü‚¸A
-node-red-pi --max-old-space-size=256
-‚Æ‚µ‚ÄAnode-red‚ª‹N“®‚·‚é‚È‚çƒCƒ“ƒXƒgÏ‚È‚Ì‚ÅA
-Ÿ‚Ìs‚ÍƒXƒLƒbƒv‚µ‚Ä‚­‚¾‚³‚¢B
-bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
-
-node-red-dashboard	UI—p‚Ìƒtƒ[
-node-red-contrib-calc	ŒvZ—p‚Ìƒtƒ[
-‚ğƒpƒŒƒbƒg‚ÌŠÇ—‚Å’Ç‰Á‚·‚éB
-
-***ƒZƒ“ƒT[ui—p‚Ìƒtƒ[‚ğ“Ç‚İ‚Ş
-flows.json
-
-***cron‚Ìİ’è
-crontab - pi.txt‚Ì“à—e‚ğcrontab -e ‚ÅAƒRƒsƒy‚·‚éB
-
-reboot
-
-Copyright (c) 2021 Takanobu Kawabata
-Released under the MIT license
-https://github.com/YukinobuKurata/YouTubeMagicBuyButton/blob/master/MIT-LICENSE.txt
-
-***SR04‚É‚Â‚¢‚Ä‚ÍsensorHAT3ƒfƒBƒŒƒNƒgƒŠ‚ÌƒRƒs[‚Ì‚İ‚Å“®ì‰Â”\
-
-***BMP180‚É‚Â‚¢‚Ä‚Íi2c‚Ìİ’è‚Æƒ‰ƒCƒuƒ‰ƒŠ‚ÌƒCƒ“ƒXƒg[ƒ‹‚ª•K—v
+ç«¯å­é…ç½®
+æ¶²æ™¶å´	RaspberryPiå´
+GND	GND
+VCC	3.3v
+SCL	GPIO11
+SDA	GPIO10
+RST	GPIO24
+DC	GPIO25
+CS	GPIO8
+BLK	GPIO12
