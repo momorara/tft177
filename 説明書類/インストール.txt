@@ -1,6 +1,9 @@
 
 インストール(以下のライブラリをインストールしてください。)
 
+プログラム等ダウンロード
+git clone https://github.com/momorara/tft177
+
 sudo apt install python3-pip 
 sudo pip3 install adafruit-circuitpython-rgb-display
 sudo apt install python3-pil 
