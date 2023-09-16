@@ -39,7 +39,6 @@ not support PIL/pillow (python imaging library)!
 
 """
 import time
-import subprocess
 import digitalio
 import board
 from PIL import Image, ImageDraw, ImageFont
@@ -229,44 +228,65 @@ def dsp_frame(frame):
 
 def main():
 
-    print('1')
+    init('on')
+    init('reset')
+    size(14)
+    disp(" ")
+    mes= '本プログラムは'
+    color('white')
+    disp(mes)
+    mes= 'ライブラリ集です。'
+    color('white')
+    disp(mes)
+    disp(" ")
+    mes= 'testプログラムは'
+    disp(mes)
+    mes= 'このライブラリを使って'
+    disp(mes)
+    mes= '表示しています。'
+    disp(mes)
+
+    time.sleep(10)
+    init('reset')
+    init('off')
+
     init('on')
     init('reset')
 
-    file = "ねこ.jpg"
-    print('2')
+    file = "./photo/ph_3.JPG"
     dsp_file(file)
-    time.sleep(1)
-    # exit(0)
+    time.sleep(0.4)
 
     mes= 'red'
     color('red')
     disp(mes)
-    time.sleep(1)
+    time.sleep(0.4)
 
     mes= 'white'
     color('white')
     size(24)
     disp(mes)
-    time.sleep(1)
+    time.sleep(0.4)
 
     mes= 'green'
     color('green')
     size(36)
     disp(mes)
-    time.sleep(1)
+    time.sleep(0.4)
 
     mes= 'blue'
     color('blue')
     size(48)
     disp(mes)
-    time.sleep(1)
+    time.sleep(0.4)
 
-    file = "夕日.jpg"
+    file = "./photo/ph_2.JPG"
     dsp_file(file)    
     time.sleep(2)
 
     init('reset')
+    disp("終わり")
+    time.sleep(2)
     init('off')
 
 
