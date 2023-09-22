@@ -7,6 +7,7 @@
 #Filename      :test_sw.py
 
 #Update        :2019/11/02
+2023/9/22   タクトスイッチ　ソフトプルダウンとする。
 ############################################################################
 """
 
@@ -30,8 +31,8 @@ def setup():
     GPIO.setwarnings(False)
     #set the gpio modes to BCM numbering
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(SW_PIN_1,GPIO.IN)
-    GPIO.setup(SW_PIN_2,GPIO.IN)
+    GPIO.setup(SW_PIN_1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
+    GPIO.setup(SW_PIN_2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
 
 #read SW_PI_1's level
 def ReadSW_1():
