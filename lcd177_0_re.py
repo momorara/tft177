@@ -252,6 +252,11 @@ def main():
     #ディスプレイの簡単なテスト(2024.4.24)
     disp_test()
 
+    time.sleep(5)
+
+    init('on')
+    init('reset')
+
 ''' フォントでエラーが出る(2024.4.24)
     print('1')
     init('on')
