@@ -37,24 +37,30 @@ not support PIL/pillow (python imaging library)!
 2022/06/17  整理、関数名修正
 2022/10/10  init('reset')にバグ 修正した。
 2024/02/10  ターミナルプロックの位置に対応するプログラムの整理
+2024/04/24  神山様からPi5用対処を頂いた
+2024/04/29  font.getsizeでエラーになるのを回避
 """
 import time
-import subprocess
 import digitalio
 import board
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 from time import sleep
-import RPi.GPIO as GPIO
+#GPIOは消す(2024.04.24)
+#import RPi.GPIO as GPIO
 from adafruit_rgb_display import st7735  # pylint: disable=unused-import
 
 reset = 24
-# ターミナルプロックをGPIO端子側を位置0
+
+# ターミナルプロックを液晶側に設定した場合を位置1
 cs_pin        = digitalio.DigitalInOut(board.CE0)
 dc_pin        = digitalio.DigitalInOut(board.D0) #RS/DC  25 or 0
 reset_pin     = digitalio.DigitalInOut(board.D18)       # 24 or 18
-backlight_pin = 13                                      # 12 or 13
+#backlight pinの部分を変更 2024.04.24
+#backlight_pin = 13                                      # 12 or 13
+
+
 BAUDRATE      = 24000000
 DISP_rotation = 270 # 0,90,180,270
 FONTSIZE      = 12  # 9〜128 なら見える
@@ -75,9 +81,13 @@ disp_lcd_177 = st7735.ST7735R(
     rst=reset_pin,
     baudrate=BAUDRATE,
 )
-# バックライト制御
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(backlight_pin, GPIO.OUT)
+# バックライト制御(削除2024.4.24)
+#GPIO.setmode(GPIO.BCM)
+#GPIO.setup(backlight_pin, GPIO.OUT)
+backlight_pin = digitalio.DigitalInOut(board.D13)  # Backlight control # 12 or 13
+backlight_pin.direction = digitalio.Direction.OUTPUT
+backlight_pin.value = True  # Turn on the backlight
+
 # ----------ここまで----------
 
 # Create blank image for drawing.
@@ -103,14 +113,18 @@ draw.rectangle((0, 0, width, height), outline=0, fill=0)
 def init(ini):
     # バックライト点灯
     if ini == 'on':
-        GPIO.output(backlight_pin,GPIO.HIGH)
+        #　バックライト変更(2024.4.24)
+        backlight_pin.value = True
+        #GPIO.output(backlight_pin,GPIO.HIGH)
         global FONTCOLOR
         FONTCOLOR = "#FFFFFF"
         # print('ini-on')
 
     # バックライト消灯
     if ini == 'off':
-        GPIO.output(backlight_pin,GPIO.LOW)
+        #　バックライト変更(2024.4.24)
+        backlight_pin.value = False
+        #GPIO.output(backlight_pin,GPIO.LOW)
         # print('ini-off')
 
     # 画面リセット カーソルを原点に戻す
@@ -126,13 +140,25 @@ def init(ini):
         disp_x = 0
 
 
+#液晶を簡単にテスト(2024.4.24)
+def disp_test():
+    font_title = ImageFont.truetype("fonts-japanese-gothic.ttf", 15)
+    
+    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
+    draw.text((30, 40), "starting test...", "white", font=font_title)
+    draw.text((45, 60), "test raspi 5" , "white", font=font_title)
+    disp_lcd_177.image(image)    
+
 def disp(mes,size=1,color='no'):
     # サイズ、色を指定してdispを呼んだ場合は、その指定に従い
     # mesのみ指定して呼んだ場合は、前回のサイズ、色に従う
     global font
+    global font_size
     font_bak = font
+    # 明示的にフォントサイズを指定されない場合は、直近で使ったフォントサイズを使用
     if size != 1:
         font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
+        font_size = size
 
     global FONTCOLOR
     FONTCOLOR_bak = FONTCOLOR
@@ -152,7 +178,10 @@ def disp(mes,size=1,color='no'):
     global disp_x,disp_y
     draw.text((disp_x, disp_y), mes,  font=font, fill=FONTCOLOR)
     disp_lcd_177.image(image)
-    disp_y += font.getsize(mes)[1]
+    # 使っているフォントサイズを取得できていたのに、出来なくてエラーになる。
+    # global変数としてフォントサイズを持つようにする font_size 
+    # disp_y += font.getsize(mes)[1]
+    disp_y += font_size
     
     FONTCOLOR = FONTCOLOR_bak
     font = font_bak
@@ -160,7 +189,9 @@ def disp(mes,size=1,color='no'):
 
 def size(size):
     global font
+    global font_size
     font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
+    font_size = size
 
 def color(color):
     if color == 'white':
@@ -229,45 +260,80 @@ def dsp_frame(frame):
 
 def main():
 
-    print('1')
+    #ディスプレイの簡単なテスト(2024.4.24)
+    disp_test()
+
+    time.sleep(5)
+
     init('on')
     init('reset')
 
-    file = "ねこ.jpg"
-    print('2')
-    dsp_file(file)
-    time.sleep(1)
-    # exit(0)
+''' フォントでエラーが出る(2024.4.24)
+    print('1')
+    init('on')
+    init('reset')
+    size(24)
 
-    mes= 'red'
+    mes= '本プログラムはライブラリ集です'
+    color('white')
+    disp(mes)
+    time.sleep(0.4)
+    mes= 'testプログラムは'
     color('red')
     disp(mes)
-    time.sleep(1)
-
-    mes= 'white'
-    color('white')
-    size(24)
+    time.sleep(0.4)
+    mes= 'このライブラリを使って'
+    color('red')
     disp(mes)
-    time.sleep(1)
-
-    mes= 'green'
-    color('green')
-    size(36)
+    time.sleep(0.4)
+    mes= '表示しています。'
+    color('red')
     disp(mes)
-    time.sleep(1)
 
-    mes= 'blue'
-    color('blue')
-    size(48)
-    disp(mes)
-    time.sleep(1)
-
-    file = "夕日.jpg"
-    dsp_file(file)    
-    time.sleep(2)
-
+    time.sleep(3)
     init('reset')
     init('off')
+'''
+ 
+    # print('1')
+    # init('on')
+    # init('reset')
+
+    # file = "./photo/ph_3.JPG"
+    # print('2')
+    # dsp_file(file)
+    # time.sleep(1)
+    # # exit(0)
+
+    # mes= 'red'
+    # color('red')
+    # disp(mes)
+    # time.sleep(1)
+
+    # mes= 'white'
+    # color('white')
+    # size(24)
+    # disp(mes)
+    # time.sleep(1)
+
+    # mes= 'green'
+    # color('green')
+    # size(36)
+    # disp(mes)
+    # time.sleep(1)
+
+    # mes= 'blue'
+    # color('blue')
+    # size(48)
+    # disp(mes)
+    # time.sleep(1)
+
+    # file = "./photo/ph_2.JPG"
+    # dsp_file(file)    
+    # time.sleep(2)
+
+    # init('reset')
+    # init('off')
 
 
 if __name__ == "__main__":

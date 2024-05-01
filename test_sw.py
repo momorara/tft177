@@ -8,15 +8,25 @@
 
 #Update        :2019/11/02
 2023/9/22   タクトスイッチ　ソフトプルダウンとする。
+2024/02/27  pi5のためgpiozeroに置き換え
+2024/04/30  pi5仮想環境ではgpiozeroが使えなかったので、digitalioにて書き換え
 ############################################################################
 """
+# from gpiozero import Button
 
-import RPi.GPIO as GPIO
+import digitalio
+import board
 import time
 
-# set GPIO 0 as switch pin
-SW_PIN_1 = 5
-SW_PIN_2 = 6
+# SW_1 = Button(5,pull_up=False)
+# SW_2 = Button(6,pull_up=False)
+
+SW_1           = digitalio.DigitalInOut(board.D5) 
+SW_1.direction = digitalio.Direction.INPUT
+SW_1.pull      = digitalio.Pull.DOWN
+SW_2           = digitalio.DigitalInOut(board.D6) 
+SW_2.direction = digitalio.Direction.INPUT
+SW_2.pull      = digitalio.Pull.DOWN
 
 #print message at the begining ---custom function
 def print_message():
@@ -26,17 +36,10 @@ def print_message():
     print ('Program is running...')
     print ('Please press Ctrl+C to end the program...')
 
-#setup function for some setup---custom function
-def setup():
-    GPIO.setwarnings(False)
-    #set the gpio modes to BCM numbering
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(SW_PIN_1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
-    GPIO.setup(SW_PIN_2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
-
 #read SW_PI_1's level
 def ReadSW_1():
-    if (GPIO.input(SW_PIN_1)):
+    pin_value = SW_1.value
+    if pin_value == True:
         sw_ = 'on'
     else:
         sw_ = 'off'
@@ -44,7 +47,8 @@ def ReadSW_1():
 
 #read SW_PI_2's level
 def ReadSW_2():
-    if (GPIO.input(SW_PIN_2)):
+    pin_value = SW_2.value
+    if pin_value == True:
         sw_ = 'on'
     else:
         sw_ = 'off'
@@ -74,19 +78,14 @@ def main():
         time.sleep(1)
     pass
 
-#define a destroy function for clean up everything after the script finished
-def destroy():
-    #release resource
-    GPIO.cleanup()
 #
 # if run this script directly ,do:
 if __name__ == '__main__':
-    setup()
     try:
             main()
     #when 'Ctrl+C' is pressed,child program destroy() will be executed.
     except KeyboardInterrupt:
-        destroy()
+        pass
     except ValueError as e:
         print(e)
 

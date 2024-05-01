@@ -12,17 +12,38 @@ LEDを点滅させます。
 
 #Update        :2019/11/02
 
+2024/02/27  pi5のためgpiozeroに置き換え
+2024/04/30  pi5仮想環境ではgpiozeroが使えなかったので、digitalioにて書き換え
+
 scp -r GPIO pi@192.168.68.128:/home/tk/
 ############################################################################
 """
 
-import RPi.GPIO as GPIO
+# from gpiozero import LED
+# import time
 
+# LEDPIN = LED(17)
+# LEDPIN2 = LED(27)
+
+import digitalio
+import board
 import time
+LEDPIN     = digitalio.DigitalInOut(board.D17) 
+LEDPIN.direction = digitalio.Direction.OUTPUT
+LEDPIN.value = False  # Turn on the backlight
 
-# set GPIO 0 as LED pin
-LEDPIN = 17
-LEDPIN2 = 27
+LEDPIN2     = digitalio.DigitalInOut(board.D27) 
+LEDPIN2.direction = digitalio.Direction.OUTPUT
+LEDPIN2.value = False  # Turn on the backlight
+"""
+LEDPIN.on()
+time.sleep(2)
+LEDPIN.off()
+
+LEDPIN2.on()
+time.sleep(2)
+LEDPIN2.off()
+"""
 
 #print message at the begining ---custom function
 def print_message():
@@ -32,59 +53,28 @@ def print_message():
     print ('Program is running...')
     print ('Please press Ctrl+C to end the program...')
 
-#setup function for some setup---custom function
-def setup():
-    GPIO.setwarnings(False)
-    #set the gpio modes to BCM numbering
-    GPIO.setmode(GPIO.BCM)
-    #set LEDPIN's mode to output,and initial level to LOW(0V)
-    GPIO.setup(LEDPIN,GPIO.OUT,initial=GPIO.LOW)
-    GPIO.setup(LEDPIN2,GPIO.OUT,initial=GPIO.LOW)
-
-def LedUpDown(on_off):
-    j = 3
-    for i in range(j):
-        GPIO.output(LEDPIN,GPIO.HIGH)
-        time.sleep(on_off)
-        GPIO.output(LEDPIN,GPIO.LOW)
-        time.sleep(0.5)
-
-def LedUpDown2(on_off):
-    j = 3
-    for i in range(j):
-        GPIO.output(LEDPIN2,GPIO.HIGH)
-        time.sleep(on_off)
-        GPIO.output(LEDPIN2,GPIO.LOW)
-        time.sleep(0.5)
 
 #main function
 def main():
     #print info
     print_message()
-    for i in range(3):
-       LedUpDown(0.2)
-       LedUpDown(0.5)
 
-       time.sleep(0.5)
+    for _ in range(4):
+        LEDPIN.value = True
+        time.sleep(0.5)
+        LEDPIN.value = False
+        time.sleep(0.3)
+    
+    for _ in range(4):
+        LEDPIN2.value = True
+        time.sleep(0.5)
+        LEDPIN2.value = False
+        time.sleep(0.3)
 
-       LedUpDown2(0.2)
-       LedUpDown2(0.5)
+
+    # LEDPIN .blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
+    # LEDPIN2.blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
 
 
-#define a destroy function for clean up everything after the script finished
-def destroy():
-    #turn off LED
-    GPIO.output(LEDPIN,GPIO.LOW)
-    #release resource
-    GPIO.cleanup()
-#
-# if run this script directly ,do:
 if __name__ == '__main__':
-    setup()
-    try:
-            main()
-    #when 'Ctrl+C' is pressed,child program destroy() will be executed.
-    except KeyboardInterrupt:
-        destroy()
-
-   
+    main()
