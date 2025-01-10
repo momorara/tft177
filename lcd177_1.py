@@ -1,340 +1,264 @@
-# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
-# SPDX-License-Identifier: MIT
+"""
+2025/01/08 独自にspi通信で表示制御する
+2025/01/09
+    imageを引数にすると面倒なので、グローバルにする
+    なるべく元の関数に近づける 
+    仮想環境を使わなくても動作する。
 
 """
-Released under the MIT license
-https://github.com/YukinobuKurata/YouTubeMagicBuyButton/blob/master/MIT-LICENSE.txt
-
-This program is based on the sample program at Adafruit-Python-Usage.
-This will show some Linux Statistics on the attached display. Be sure to adjust
-to the display you have connected. Be sure to check the learn guides for more
-usage information.
-
-This example is for use on (Linux) computers that are using CPython with
-Adafruit Blinka to support CircuitPython libraries. CircuitPython does
-not support PIL/pillow (python imaging library)!
-
-2022/04/09  使いやすいように改変した
-            日本語対応
-2022/04/10  関数化してみる
-    lcd177.pyとして関数化
-    lcd177.init('on')     として表示開始 バックライト点灯
-    lcd177.disp('message')として表示する
-    lcd177.size(16)       としてフォントサイズ指定 デフォルト 12
-    lcd177.color('green') として文字色指定 デフォルト 白 ,#0000FFも可能
-    lcd177.init('off')    として表示終了 バックライト消灯
-    lcd177.init('reset')  として液晶をリセット
-    lcd177.disp('message',size,color)size指定、色指定も可能
-                colorは white,blue,red,greenが使える
-                        #0000FFといった指定も可能
-    ただし、色、サイズ、messageのエラーチェックはしていないので、要チェック
-
-            固定設定
-            DISP_rotation:0,90,180,270で指定
-
-2022/04/11  lcd177.image_f(画像ファイルパス)
-2022/04/14  pin整理
-2022/06/17  整理、関数名修正
-2022/10/10  init('reset')にバグ 修正した。
-2024/02/10  ターミナルプロックの位置に対応するプログラムの整理
-2024/04/24  神山様からPi5用対処を頂いた
-2024/04/29  font.getsizeでエラーになるのを回避
-"""
-import time
-import digitalio
-import board
+import spidev
+from gpiozero import DigitalOutputDevice
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np
+import time
 
-from time import sleep
-#GPIOは消す(2024.04.24)
-#import RPi.GPIO as GPIO
-from adafruit_rgb_display import st7735  # pylint: disable=unused-import
+# ピン設定
+CS_PIN = 0  # CE0
+DC_PIN = 0
+RESET_PIN = 18
+BACKLIGHT_PIN = 13
 
-reset = 24
+# SPI設定
+SPI_BUS = 0
+SPI_DEVICE = 0
+SPI_SPEED_HZ = 40000000  # 4 MHz 
+# 速くできるが、やりすぎるとドット抜けなどエラーになる 8MHzくらいならOK? 
 
-# ターミナルプロックを液晶側に設定した場合を位置1
-cs_pin        = digitalio.DigitalInOut(board.CE0)
-dc_pin        = digitalio.DigitalInOut(board.D0) #RS/DC  25 or 0
-reset_pin     = digitalio.DigitalInOut(board.D18)       # 24 or 18
-#backlight pinの部分を変更 2024.04.24
-#backlight_pin = 13                                      # 12 or 13
+# GPIO設定
+dc = DigitalOutputDevice(DC_PIN)
+reset = DigitalOutputDevice(RESET_PIN)
+backlight = DigitalOutputDevice(BACKLIGHT_PIN)
 
+# SPI初期化
+spi = spidev.SpiDev()
+spi.open(SPI_BUS, SPI_DEVICE)
+spi.max_speed_hz = SPI_SPEED_HZ
+spi.mode = 0
 
-BAUDRATE      = 24000000
-DISP_rotation = 270 # 0,90,180,270
-FONTSIZE      = 12  # 9〜128 なら見える
-FONTCOLOR     = "#FFFFFF"
-# First define some constants to allow easy positioning of text.
+width=160
+height=128
 disp_padding = -2
 disp_y = -disp_padding
 disp_x = 0
-
-
-# 使用する液晶が異なる場合、サイトを参考に以下を書き換えてください。
-# ----------ここから----------
-disp_lcd_177 = st7735.ST7735R(
-    board.SPI(),
-    rotation=DISP_rotation,
-    cs=cs_pin,
-    dc=dc_pin,
-    rst=reset_pin,
-    baudrate=BAUDRATE,
-)
-# バックライト制御(削除2024.4.24)
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(backlight_pin, GPIO.OUT)
-backlight_pin = digitalio.DigitalInOut(board.D13)  # Backlight control # 12 or 13
-backlight_pin.direction = digitalio.Direction.OUTPUT
-backlight_pin.value = True  # Turn on the backlight
-
-# ----------ここまで----------
-
-# Create blank image for drawing.
-# Make sure to create image with mode 'RGB' for full color.
-if disp_lcd_177.rotation % 180 == 90:
-    height = disp_lcd_177.width  # we swap height/width to rotate it to landscape!
-    width = disp_lcd_177.height
-else:
-    width = disp_lcd_177.width  # we swap height/width to rotate it to landscape!
-    height = disp_lcd_177.height
-image = Image.new("RGB", (width, height))
-# Get drawing object to draw on image.
-draw = ImageDraw.Draw(image)
-# Draw a black filled box to clear the image.
-draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-disp_lcd_177.image(image)
-# Load a TTF font. 
+image = Image.new("RGB", (width, height), "black")
+FONTSIZE      = 12       # 9〜128 なら見える
+FONTCOLOR     = "white"
 font = ImageFont.truetype("fonts-japanese-gothic.ttf", FONTSIZE)
-# Draw a black filled box to clear the image.
-draw.rectangle((0, 0, width, height), outline=0, fill=0)
 
+# コマンド送信
+def send_command(cmd):
+    dc.off()
+    spi.writebytes([cmd])
+
+# データ送信（チャンク処理付き）
+def send_data(data):
+    dc.on()
+    chunk_size = 4096
+    for i in range(0, len(data), chunk_size):
+        spi.writebytes(data[i:i+chunk_size])
+
+# リセット関数
+def reset_display():
+    reset.off()
+    time.sleep(0.1)
+    reset.on()
+    time.sleep(0.1)
+
+# 初期化関数
+def init_display():
+    reset_display()
+    send_command(0x01)  # Software reset
+    time.sleep(0.15)
+    send_command(0x11)  # Exit sleep mode
+    time.sleep(0.12)
+    send_command(0x3A)  # Set color mode
+    send_data([0x05])   # 16-bit color
+    send_command(0x36)  # Memory access control
+    send_data([0x70])   # RGB color order
+    send_command(0x29)  # Display ON
+    time.sleep(0.1)
+
+# バックライト制御
+def set_backlight(state):
+    if state:
+        backlight.on()
+    else:
+        backlight.off()
+
+# 画像描画
+def draw_image():
+    # 画像を180度反転
+    dsp_image = image.rotate(180)
+
+    width, height = dsp_image.size
+    send_command(0x2A)  # Column address set
+    send_data([0x00, 0, 0x00, width - 1])
+    send_command(0x2B)  # Row address set
+    send_data([0x00, 0, 0x00, height - 1])
+    send_command(0x2C)  # Memory write
+
+    # 画像データを16ビットカラーに変換
+    pixels = dsp_image.convert("RGB").load()
+    pixel_data = []
+    for y in range(height):
+        for x in range(width):
+            r, g, b = pixels[x, y]
+            color = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            pixel_data.append((color >> 8) & 0xFF)
+            pixel_data.append(color & 0xFF)
+    send_data(pixel_data)
 
 def init(ini):
+    global image
+    global disp_x,disp_y
     # バックライト点灯
     if ini == 'on':
-        #　バックライト変更(2024.4.24)
-        backlight_pin.value = True
-        #GPIO.output(backlight_pin,GPIO.HIGH)
-        global FONTCOLOR
-        FONTCOLOR = "#FFFFFF"
-        # print('ini-on')
-
+        backlight.on()
+        ini = 'reset'
     # バックライト消灯
     if ini == 'off':
-        #　バックライト変更(2024.4.24)
-        backlight_pin.value = False
-        #GPIO.output(backlight_pin,GPIO.LOW)
-        # print('ini-off')
-
+        backlight.off()
     # 画面リセット カーソルを原点に戻す
     if ini == 'reset':
+        init_display()
         # 画面を消去
-        draw.rectangle((0, 0, width, height), outline=0, fill=0)
+        image = Image.new("RGB", (width, height), "black")
+        draw_image()
         # カーソルを原点に戻す
-        global disp_x,disp_y
         disp_y = -2
         disp_x = 0
-        disp('    ',48)
+        # disp('    ',48)
         disp_y = -2
         disp_x = 0
 
+# テキスト描画
+def draw_text(text):
+    global FONTCOLOR
+    global FONTSIZE
+    global disp_x
+    global disp_y
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("fonts-japanese-gothic.ttf", FONTSIZE)
 
-#液晶を簡単にテスト(2024.4.24)
-def disp_test():
-    font_title = ImageFont.truetype("fonts-japanese-gothic.ttf", 15)
-    
-    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-    draw.text((30, 40), "starting test...", "white", font=font_title)
-    draw.text((45, 60), "test raspi 5" , "white", font=font_title)
-    disp_lcd_177.image(image)    
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    x = (width - text_width) // 2
+    y = (height - text_height) // 2
+    draw.text((disp_x, disp_y), text, font=font, fill=FONTCOLOR)
+
+# ピクセル描画
+def pixel(x, y, color):
+    draw = ImageDraw.Draw(image)
+    draw.point((x, y), fill=color)
+
+# image領域を黒で塗りつぶして表示し返す
+def imageClear():
+    global image
+    global disp_x,disp_y
+    disp_y = -disp_padding
+    disp_x = 0
+    image = Image.new("RGB", (width, height), "black")
+    draw_image()
+
+def size(size):
+    global FONTSIZE
+    FONTSIZE = size
+
+def color(color):
+    global FONTCOLOR
+    FONTCOLOR = color
 
 def disp(mes,size=1,color='no'):
     # サイズ、色を指定してdispを呼んだ場合は、その指定に従い
     # mesのみ指定して呼んだ場合は、前回のサイズ、色に従う
-    global font
-    global font_size
-    font_bak = font
+    global FONTSIZE
+    global FONTCOLOR
+    global disp_x,disp_y
     # 明示的にフォントサイズを指定されない場合は、直近で使ったフォントサイズを使用
     if size != 1:
         font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
-        font_size = size
-
-    global FONTCOLOR
-    FONTCOLOR_bak = FONTCOLOR
-    if color == 'white':
-        color = "#FFFFFF"
-    if color == 'red':
-        color = "#0000FF"
-    if color == 'blue':
-        color = "#FF0000"
-    if color == 'green':
-        color = "#00FF00"
-    if color == 'no':
-        FONTCOLOR = FONTCOLOR_bak # 色指定が無い場合は、前回設定を使用
-    else:
+        FONTSIZE = size
+    # 明示的にフォントカラーを指定されない場合は、直近で使ったフォントカラーを使用
+    if color != 'no':
         FONTCOLOR = color
+    # イメージファィルに描画
+    draw_text(mes)
+    # 改行処理
+    disp_y = disp_y + FONTSIZE
+    # 実際にディスプレイに描画
+    draw_image()
 
-    global disp_x,disp_y
-    draw.text((disp_x, disp_y), mes,  font=font, fill=FONTCOLOR)
-    disp_lcd_177.image(image)
-    # 使っているフォントサイズを取得できていたのに、出来なくてエラーになる。
-    # global変数としてフォントサイズを持つようにする font_size 
-    # disp_y += font.getsize(mes)[1]
-    disp_y += font_size
-    
-    FONTCOLOR = FONTCOLOR_bak
-    font = font_bak
-    # print('tft')
-
-def size(size):
-    global font
-    global font_size
-    font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
-    font_size = size
-
-def color(color):
-    if color == 'white':
-        color = "#FFFFFF"
-    if color == 'red':
-        color = "#0000FF"
-    if color == 'blue':
-        color = "#FF0000"
-    if color == 'green':
-        color = "#00FF00"
-    global FONTCOLOR
-    FONTCOLOR = color
-
-# 受け取ったファイルを液晶に表示
-def dsp_file(file):
-    # 受け取ったファイルからフレームを取り出し
-    image = Image.open(file)
-    # dsp_frameに渡す
-    dsp_frame(image)
-
-# 受け取ったフレームを液晶に表示
-def dsp_frame(frame):
-    # まず、液晶を白紙状態にします。
-    # Make sure to create image with mode 'RGB' for full color.
-    if disp_lcd_177.rotation % 180 == 90 :
-        height = disp_lcd_177.width  # we swap height/width to rotate it to landscape!
-        width  = disp_lcd_177.height
-    else:
-        width = disp_lcd_177.width  # we swap height/width to rotate it to landscape!
-        height = disp_lcd_177.height
-    image = Image.new("RGB", (width, height))
-    # Get drawing object to draw on image.
-    draw = ImageDraw.Draw(image)
-    # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-    disp_lcd_177.image(image)
-
-    # 描画すべき画像データのパスを渡します。
-    # 読み込む画像データがRGBで、液晶はGBRなので色変換が必要
-    # image = Image.open(dsp_file)
-    # Pillow -> NumPyへの変換
-    image_np = np.array(frame)
-    # RGBからGBRへ変換
-    image_np = image_np[:, :, ::-1]
-    # NumPy -> Pillowへの変換
-    image = Image.fromarray(image_np)
-
-    # 画像データの大きさを調整します。
-    # Scale the image to the smaller screen dimension
-    image_ratio = image.width / image.height
-    screen_ratio = width / height
-    if screen_ratio < image_ratio:
-        scaled_width = image.width * height // image.height
-        scaled_height = height
-    else:
-        scaled_width = width
-        scaled_height = image.height * width // image.width
-    image = image.resize((scaled_width, scaled_height), Image.BICUBIC)
-    # Crop and center the image
-    x = scaled_width // 2 - width // 2
-    y = scaled_height // 2 - height // 2
-    image = image.crop((x, y, x + width, y + height))
-
-    # 画像データを表示します。
-    disp_lcd_177.image(image)
-
-def main():
-
-    #ディスプレイの簡単なテスト(2024.4.24)
-    disp_test()
-
-    time.sleep(5)
-
-    init('on')
-    init('reset')
-
-''' フォントでエラーが出る(2024.4.24)
-    print('1')
-    init('on')
-    init('reset')
-    size(24)
-
-    mes= '本プログラムはライブラリ集です'
-    color('white')
-    disp(mes)
-    time.sleep(0.4)
-    mes= 'testプログラムは'
-    color('red')
-    disp(mes)
-    time.sleep(0.4)
-    mes= 'このライブラリを使って'
-    color('red')
-    disp(mes)
-    time.sleep(0.4)
-    mes= '表示しています。'
-    color('red')
-    disp(mes)
-
-    time.sleep(3)
-    init('reset')
-    init('off')
-'''
- 
-    # print('1')
-    # init('on')
-    # init('reset')
-
-    # file = "./photo/ph_3.JPG"
-    # print('2')
-    # dsp_file(file)
-    # time.sleep(1)
-    # # exit(0)
-
-    # mes= 'red'
-    # color('red')
-    # disp(mes)
-    # time.sleep(1)
-
-    # mes= 'white'
-    # color('white')
-    # size(24)
-    # disp(mes)
-    # time.sleep(1)
-
-    # mes= 'green'
-    # color('green')
-    # size(36)
-    # disp(mes)
-    # time.sleep(1)
-
-    # mes= 'blue'
-    # color('blue')
-    # size(48)
-    # disp(mes)
-    # time.sleep(1)
-
-    # file = "./photo/ph_2.JPG"
-    # dsp_file(file)    
-    # time.sleep(2)
-
-    # init('reset')
-    # init('off')
+# JPEGファイルを描画する関数
+def dsp_file(file_name):
+    """
+    指定されたJPEGファイルをディスプレイに描画する関数。
+    Args:file_name (str): 描画するJPEGファイルのパス。
+    """
+    try:
+        # グローバル変数を使用
+        global image
+        # ファイルを開く
+        img = Image.open(file_name)
+        # 画像をディスプレイサイズにリサイズ
+        # img = img.resize((width, height), Image.Resampling.LANCZOS)
+        # 古いPillow用のANTIALIASを使用
+        if hasattr(Image, "Resampling"):
+            img = img.resize((width, height), Image.Resampling.LANCZOS)
+        else:
+            img = img.resize((width, height), Image.ANTIALIAS)
+        # 画像をディスプレイに描画
+        image = img
+        draw_image()
+        # print(f"{file_name} を描画しました。")
+    except FileNotFoundError:
+        print(f"エラー: {file_name} が見つかりません。")
+    except Exception as e:
+        print(f"エラー: {str(e)}")
 
 
+# メイン処理
 if __name__ == "__main__":
-    main()
+
+    try:
+        # ディスプレイ初期化
+        print("Initializing display...")
+        init('reset') # ディスプレイをイニシャライズ
+        init('on')    # バックライト点灯
+
+        mes= 'テストです。'
+        color('red')
+        size(16)
+        print(FONTCOLOR,FONTSIZE)
+        disp(mes)
+        # draw_image()
+
+        time.sleep(2)
+        color('white')
+        size(26)
+        print(FONTCOLOR,FONTSIZE)
+        disp(mes)
+        color('red')        
+        disp(mes)
+        color('blue')
+        disp(mes)
+
+        print("Text drawn!")
+
+        time.sleep(2)
+        imageClear()
+        color('green')
+        disp(mes)
+        time.sleep(3)
+
+        file_name = "photo/ph_1.JPG"
+        dsp_file(file_name)
+        time.sleep(3)
+        
+        init('off')    # バックライト消灯
+        init('reset')
+        
+
+    finally:
+        print("Turning off backlight.")
+        set_backlight(False)
+        spi.close()

@@ -34,9 +34,8 @@ def main():
     lcd177_1.disp(mes,28,'white')
 
     time.sleep(2)
-
-    lcd177_1.init('reset')
     lcd177_1.init('off')
+    lcd177_1.init('reset')
 
 if __name__ == "__main__":
     main()

@@ -12,29 +12,18 @@ LEDを点滅させます。
 
 #Update        :2019/11/02
 
-2024/02/27  pi5のためgpiozeroに置き換え
-2024/04/30  pi5仮想環境ではgpiozeroが使えなかったので、digitalioにて書き換え
+2025/01/07  pi5のためgpiozeroに置き換え
 
-scp -r GPIO pi@192.168.68.128:/home/tk/
+
 ############################################################################
 """
 
-# from gpiozero import LED
-# import time
-
-# LEDPIN = LED(17)
-# LEDPIN2 = LED(27)
-
-import digitalio
-import board
+from gpiozero import LED
 import time
-LEDPIN     = digitalio.DigitalInOut(board.D17) 
-LEDPIN.direction = digitalio.Direction.OUTPUT
-LEDPIN.value = False  # Turn on the backlight
 
-LEDPIN2     = digitalio.DigitalInOut(board.D27) 
-LEDPIN2.direction = digitalio.Direction.OUTPUT
-LEDPIN2.value = False  # Turn on the backlight
+LEDPIN = LED(17)
+LEDPIN2 = LED(27)
+
 """
 LEDPIN.on()
 time.sleep(2)
@@ -59,22 +48,14 @@ def main():
     #print info
     print_message()
 
-    for _ in range(4):
-        LEDPIN.value = True
-        time.sleep(0.5)
-        LEDPIN.value = False
-        time.sleep(0.3)
-    
-    for _ in range(4):
-        LEDPIN2.value = True
-        time.sleep(0.5)
-        LEDPIN2.value = False
-        time.sleep(0.3)
-
-
-    # LEDPIN .blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
-    # LEDPIN2.blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
-
+    LEDPIN .blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
+    LEDPIN2.blink(on_time = 0.2, off_time = 0.2, n = 6, background = False)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    #when 'Ctrl+C' is pressed,child program destroy() will be executed.
+    except KeyboardInterrupt:
+        pass
+    except ValueError as e:
+        print(e)

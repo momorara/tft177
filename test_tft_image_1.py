@@ -38,9 +38,9 @@ def main():
         lcd177_1.dsp_file(dsp_file)
         time.sleep(2)
 
-    lcd177_1.init('reset')    
-    time.sleep(1)
+    time.sleep(2)
     lcd177_1.init('off')
+    lcd177_1.init('reset')
 
 
 if __name__ == "__main__":

@@ -8,25 +8,14 @@
 
 #Update        :2019/11/02
 2023/9/22   タクトスイッチ　ソフトプルダウンとする。
-2024/02/27  pi5のためgpiozeroに置き換え
-2024/04/30  pi5仮想環境ではgpiozeroが使えなかったので、digitalioにて書き換え
+2025/01/07  pi5のためgpiozeroに置き換え
 ############################################################################
 """
-# from gpiozero import Button
-
-import digitalio
-import board
+from gpiozero import Button
 import time
 
-# SW_1 = Button(5,pull_up=False)
-# SW_2 = Button(6,pull_up=False)
-
-SW_1           = digitalio.DigitalInOut(board.D5) 
-SW_1.direction = digitalio.Direction.INPUT
-SW_1.pull      = digitalio.Pull.DOWN
-SW_2           = digitalio.DigitalInOut(board.D6) 
-SW_2.direction = digitalio.Direction.INPUT
-SW_2.pull      = digitalio.Pull.DOWN
+SW_1 = Button(5,pull_up=False)
+SW_2 = Button(6,pull_up=False)
 
 #print message at the begining ---custom function
 def print_message():
@@ -36,10 +25,10 @@ def print_message():
     print ('Program is running...')
     print ('Please press Ctrl+C to end the program...')
 
+
 #read SW_PI_1's level
 def ReadSW_1():
-    pin_value = SW_1.value
-    if pin_value == True:
+    if SW_1.is_pressed:
         sw_ = 'on'
     else:
         sw_ = 'off'
@@ -47,8 +36,7 @@ def ReadSW_1():
 
 #read SW_PI_2's level
 def ReadSW_2():
-    pin_value = SW_2.value
-    if pin_value == True:
+    if SW_2.is_pressed:
         sw_ = 'on'
     else:
         sw_ = 'off'
@@ -82,11 +70,9 @@ def main():
 # if run this script directly ,do:
 if __name__ == '__main__':
     try:
-            main()
+        main()
     #when 'Ctrl+C' is pressed,child program destroy() will be executed.
     except KeyboardInterrupt:
         pass
     except ValueError as e:
         print(e)
-
-   

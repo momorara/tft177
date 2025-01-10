@@ -27,7 +27,6 @@ https://learn.adafruit.com/1-8-tft-display/python-usage
 
 import lcd177_0
 import time
-from PIL import Image, ImageDraw, ImageFont
 
 def main():
 
@@ -38,9 +37,10 @@ def main():
         lcd177_0.dsp_file(dsp_file)
         time.sleep(2)
 
-    lcd177_0.init('reset')    
-    time.sleep(1)
+      
+    time.sleep(2)
     lcd177_0.init('off')
+    lcd177_0.init('reset')
 
 
 if __name__ == "__main__":
