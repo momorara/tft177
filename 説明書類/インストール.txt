@@ -24,15 +24,12 @@ sudo apt-get install fonts-ipafont
 プログラムをダウンロード
 git clone https://github.com/momorara/tft177
 
-仮想環境を作る際は
-python3 -m venv V_tft177 --system-site-packages
-としてください。
-
-
-
-
-
-
+cd tft177
+として
+サンプルプログラムを実行してください。
+プラグが
+液晶側に付いていれば、0
+ピン側に付いていれば、1 です。
 
 今回は、仮想環境を使わなくても動作しますが、一応説明をつけておきます。
 
