@@ -1,0 +1,10 @@
+【使用ソフトウェアについて】
+
+本教材／ソフトウェアでは、以下のソフトウェアを使用しています。
+
+- Python Standard Library（PSF License）
+- gpiozero（BSD 3-Clause License）
+- Pillow（HPND License）
+- spidev（GPL v2）
+
+※ spidev は OS に標準で含まれるライブラリを利用しています。

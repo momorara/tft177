@@ -1,0 +1,14 @@
+sudo apt-get install -y fonts-dejavu
+sudo apt-get install -y fonts-ipafont
+
+【使用フォントについて】
+
+本教材／ソフトウェアでは、以下のフォントを利用しています。
+これらのフォントは、ユーザー自身がOSの公式パッケージ管理機能を用いて
+インストールする方式を採用しています。
+
+- DejaVu Fonts
+  License: Bitstream Vera License
+
+- IPA Fonts (IPAex Gothic / IPAex Mincho)
+  License: IPAフォントライセンス v1.0
