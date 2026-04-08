@@ -1,0 +1,14 @@
+
+This project uses the following libraries:
+
+- Pillow (HPND License)
+- pigpio (Unlicense)
+- gpiozero (BSD 3-Clause License)
+
+It also uses the following fonts:
+
+- DejaVu Fonts (Bitstream Vera License)
+- IPA Fonts (IPA Font License)
+
+Python standard library modules are used under the Python Software Foundation License.
+
