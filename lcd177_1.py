@@ -5,8 +5,10 @@
     なるべく元の関数に近づける 
     仮想環境を使わなくても動作する。
 
+2026/04/08 spidevを使わずにpigpioで書き換え
 """
-import spidev
+print("pigpio")
+import pigpio
 from gpiozero import DigitalOutputDevice
 from PIL import Image, ImageDraw, ImageFont
 import time
@@ -20,19 +22,19 @@ BACKLIGHT_PIN = 13
 # SPI設定
 SPI_BUS = 0
 SPI_DEVICE = 0
-SPI_SPEED_HZ = 40000000  # 4 MHz 
-# 速くできるが、やりすぎるとドット抜けなどエラーになる 8MHzくらいならOK? 
+SPI_SPEED_HZ = 4000000  # pigpioは4〜8MHz推奨
 
 # GPIO設定
 dc = DigitalOutputDevice(DC_PIN)
 reset = DigitalOutputDevice(RESET_PIN)
 backlight = DigitalOutputDevice(BACKLIGHT_PIN)
 
-# SPI初期化
-spi = spidev.SpiDev()
-spi.open(SPI_BUS, SPI_DEVICE)
-spi.max_speed_hz = SPI_SPEED_HZ
-spi.mode = 0
+# ===== SPI初期化（spidev → pigpio）=====
+pi = pigpio.pi()
+if not pi.connected:
+    raise RuntimeError("pigpio daemon not running (sudo pigpiod)")
+
+spi = pi.spi_open(SPI_DEVICE, SPI_SPEED_HZ, 0)
 
 width=160
 height=128
@@ -40,21 +42,21 @@ disp_padding = -2
 disp_y = -disp_padding
 disp_x = 0
 image = Image.new("RGB", (width, height), "black")
-FONTSIZE      = 12       # 9〜128 なら見える
+FONTSIZE      = 12
 FONTCOLOR     = "white"
 font = ImageFont.truetype("fonts-japanese-gothic.ttf", FONTSIZE)
 
 # コマンド送信
 def send_command(cmd):
     dc.off()
-    spi.writebytes([cmd])
+    pi.spi_xfer(spi, [cmd])
 
 # データ送信（チャンク処理付き）
 def send_data(data):
     dc.on()
     chunk_size = 4096
     for i in range(0, len(data), chunk_size):
-        spi.writebytes(data[i:i+chunk_size])
+        pi.spi_xfer(spi, data[i:i+chunk_size])
 
 # リセット関数
 def reset_display():
@@ -66,15 +68,15 @@ def reset_display():
 # 初期化関数
 def init_display():
     reset_display()
-    send_command(0x01)  # Software reset
+    send_command(0x01)
     time.sleep(0.15)
-    send_command(0x11)  # Exit sleep mode
+    send_command(0x11)
     time.sleep(0.12)
-    send_command(0x3A)  # Set color mode
-    send_data([0x05])   # 16-bit color
-    send_command(0x36)  # Memory access control
-    send_data([0x70])   # RGB color order
-    send_command(0x29)  # Display ON
+    send_command(0x3A)
+    send_data([0x05])
+    send_command(0x36)
+    send_data([0x70])
+    send_command(0x29)
     time.sleep(0.1)
 
 # バックライト制御
@@ -86,17 +88,15 @@ def set_backlight(state):
 
 # 画像描画
 def draw_image():
-    # 画像を180度反転
     dsp_image = image.rotate(180)
 
     width, height = dsp_image.size
-    send_command(0x2A)  # Column address set
+    send_command(0x2A)
     send_data([0x00, 0, 0x00, width - 1])
-    send_command(0x2B)  # Row address set
+    send_command(0x2B)
     send_data([0x00, 0, 0x00, height - 1])
-    send_command(0x2C)  # Memory write
+    send_command(0x2C)
 
-    # 画像データを16ビットカラーに変換
     pixels = dsp_image.convert("RGB").load()
     pixel_data = []
     for y in range(height):
@@ -110,23 +110,20 @@ def draw_image():
 def init(ini):
     global image
     global disp_x,disp_y
-    # バックライト点灯
+
     if ini == 'on':
         backlight.on()
         ini = 'reset'
-    # バックライト消灯
+
     if ini == 'off':
         backlight.off()
-    # 画面リセット カーソルを原点に戻す
+
     if ini == 'reset':
         init_display()
-        # 画面を消去
         image = Image.new("RGB", (width, height), "black")
         draw_image()
-        # カーソルを原点に戻す
         disp_y = -2
         disp_x = 0
-        # disp('    ',48)
         disp_y = -2
         disp_x = 0
 
@@ -169,68 +166,53 @@ def color(color):
     FONTCOLOR = color
 
 def disp(mes,size=1,color='no'):
-    # サイズ、色を指定してdispを呼んだ場合は、その指定に従い
-    # mesのみ指定して呼んだ場合は、前回のサイズ、色に従う
     global FONTSIZE
     global FONTCOLOR
     global disp_x,disp_y
-    # 明示的にフォントサイズを指定されない場合は、直近で使ったフォントサイズを使用
+
     if size != 1:
         font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
         FONTSIZE = size
-    # 明示的にフォントカラーを指定されない場合は、直近で使ったフォントカラーを使用
+
     if color != 'no':
         FONTCOLOR = color
-    # イメージファィルに描画
+
     draw_text(mes)
-    # 改行処理
     disp_y = disp_y + FONTSIZE
-    # 実際にディスプレイに描画
     draw_image()
 
 # JPEGファイルを描画する関数
 def dsp_file(file_name):
-    """
-    指定されたJPEGファイルをディスプレイに描画する関数。
-    Args:file_name (str): 描画するJPEGファイルのパス。
-    """
     try:
-        # グローバル変数を使用
         global image
-        # ファイルを開く
         img = Image.open(file_name)
-        # 画像をディスプレイサイズにリサイズ
-        # img = img.resize((width, height), Image.Resampling.LANCZOS)
-        # 古いPillow用のANTIALIASを使用
+
         if hasattr(Image, "Resampling"):
             img = img.resize((width, height), Image.Resampling.LANCZOS)
         else:
             img = img.resize((width, height), Image.ANTIALIAS)
-        # 画像をディスプレイに描画
+
         image = img
         draw_image()
-        # print(f"{file_name} を描画しました。")
+
     except FileNotFoundError:
         print(f"エラー: {file_name} が見つかりません。")
     except Exception as e:
         print(f"エラー: {str(e)}")
 
-
-# メイン処理
+# ===== メイン処理（完全に元のまま）=====
 if __name__ == "__main__":
 
     try:
-        # ディスプレイ初期化
         print("Initializing display...")
-        init('reset') # ディスプレイをイニシャライズ
-        init('on')    # バックライト点灯
+        init('reset')
+        init('on')
 
         mes= 'テストです。'
         color('red')
         size(16)
         print(FONTCOLOR,FONTSIZE)
         disp(mes)
-        # draw_image()
 
         time.sleep(2)
         color('white')
@@ -254,11 +236,11 @@ if __name__ == "__main__":
         dsp_file(file_name)
         time.sleep(3)
         
-        init('off')    # バックライト消灯
+        init('off')
         init('reset')
         
-
     finally:
         print("Turning off backlight.")
         set_backlight(False)
-        spi.close()
+        pi.spi_close(spi)
+        pi.stop()
