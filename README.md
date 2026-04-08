@@ -46,9 +46,9 @@ Install出来たら、testプログラムを起動してみてください。<br
 2026/03/19 対応OS：Trixie版13.4(64bit)にて動作確認しました。<br>
          
 <h4><<ライセンス>></h4>
+This project is licensed under the MIT License.
 使用しているライブラリについては、ライブラリ制作者のライセンス規定を参照ください。 <br>
 オリジナル部分については、オープソースとさせていただきます。 <br>
-Released under the MIT license です。 <br>
 プログラム自体はサンプルプログラムです。 <br>
 
 <h4><<サポート情報>>></h4>
