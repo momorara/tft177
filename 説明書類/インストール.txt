@@ -24,6 +24,8 @@ sudo apt-get install fonts-ipafont
 
 プログラムをダウンロード
 git clone https://github.com/momorara/tft177
+pigpioを使用するので、sudo pigpiod とするか
+cronに @reboot sudo pigpiod として下さい。
 
 cd tft177
 として
