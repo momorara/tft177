@@ -78,13 +78,26 @@ GRID_H = 16
 BLOCK = 8
 
 offset_x = (WIDTH - GRID_W * BLOCK) // 2
-offset_y = 0
 
-COLORS = ["red", "yellow", "green", "white"]
+COLORS = [
+    "red", "yellow", "green", "white",
+    "blue", "cyan", "magenta",
+    "orange", "purple", "pink",
+    "lime", "gold", "skyblue"
+]
+
+last_color = None
+
+def get_random_color():
+    global last_color
+    color = random.choice(COLORS)
+    while color == last_color:
+        color = random.choice(COLORS)
+    last_color = color
+    return color
 
 grid = [[None for _ in range(GRID_W)] for _ in range(GRID_H)]
 
-# ===== テトリミノ =====
 SHAPES = [
     [(0,0),(1,0),(0,1),(1,1)],
     [(0,0),(1,0),(2,0),(3,0)],
@@ -97,7 +110,7 @@ def new_piece():
         "shape": random.choice(SHAPES),
         "x": 4,
         "y": 0,
-        "color": random.choice(COLORS)
+        "color": get_random_color()
     }
 
 piece = new_piece()
@@ -111,7 +124,6 @@ def rotate(shape):
 def try_rotate():
     global piece
     new_shape = rotate(piece["shape"])
-
     min_x = min(x for x, y in new_shape)
     min_y = min(y for x, y in new_shape)
     adjusted = [(x - min_x, y - min_y) for x, y in new_shape]
@@ -163,29 +175,26 @@ def draw():
     draw = ImageDraw.Draw(image)
     draw.rectangle((0,0,WIDTH,HEIGHT), fill="black")
 
-    # 枠線
     draw.line((offset_x-2,0, offset_x-2, GRID_H*BLOCK), fill="white", width=2)
     draw.line((offset_x+GRID_W*BLOCK+2,0,
                offset_x+GRID_W*BLOCK+2, GRID_H*BLOCK), fill="white", width=2)
 
-    # 固定ブロック
     for y in range(GRID_H):
         for x in range(GRID_W):
             if grid[y][x]:
                 draw.rectangle((
                     offset_x + x*BLOCK,
-                    offset_y + y*BLOCK,
+                    y*BLOCK,
                     offset_x + (x+1)*BLOCK,
-                    offset_y + (y+1)*BLOCK),
+                    (y+1)*BLOCK),
                     fill=grid[y][x])
 
-    # ピース
     for x,y in piece["shape"]:
         draw.rectangle((
             offset_x + (piece["x"]+x)*BLOCK,
-            offset_y + (piece["y"]+y)*BLOCK,
+            (piece["y"]+y)*BLOCK,
             offset_x + (piece["x"]+x+1)*BLOCK,
-            offset_y + (piece["y"]+y+1)*BLOCK),
+            (piece["y"]+y+1)*BLOCK),
             fill=piece["color"])
 
     draw.text((5,5), f"{score}", fill="white")
@@ -198,7 +207,7 @@ try:
 
     while not game_over:
 
-        # ===== 回転（同時押し）=====
+        # 回転
         if SW_1.is_pressed and SW_2.is_pressed:
             if not rotate_pressed:
                 try_rotate()
@@ -206,7 +215,6 @@ try:
         else:
             rotate_pressed = False
 
-            # 左右（逆）
             if SW_1.is_pressed:
                 if not collision(piece["x"]+1, piece["y"], piece["shape"]):
                     piece["x"] += 1
@@ -215,9 +223,11 @@ try:
                 if not collision(piece["x"]-1, piece["y"], piece["shape"]):
                     piece["x"] -= 1
 
-        # ===== 落下 =====
+        # ★ スピード制御（ここが追加）
+        speed = max(3, 10 - (score // 2))
+
         drop_timer += 1
-        if drop_timer > 10:
+        if drop_timer > speed:
             drop_timer = 0
 
             if not collision(piece["x"], piece["y"]+1, piece["shape"]):
@@ -232,7 +242,6 @@ try:
         draw()
         time.sleep(0.05)
 
-    # ===== GAME OVER =====
     draw = ImageDraw.Draw(image)
     draw.rectangle((0,0,WIDTH,HEIGHT), fill="black")
     draw.text((40,50), "GAME OVER", fill="white")
