@@ -27,6 +27,10 @@ git clone https://github.com/momorara/tft177
 pigpioを使用するので、sudo pigpiod とするか
 cronに @reboot sudo pigpiod として下さい。
 
+Pigpioが入っていない場合は、
+sudo apt install python3-pigpio
+でインストール
+
 cd tft177
 として
 サンプルプログラムを実行してください。
