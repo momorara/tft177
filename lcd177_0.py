@@ -6,6 +6,7 @@
     仮想環境を使わなくても動作する。
 
 2026/04/08 spidevを使わずにpigpioで書き換え
+2026/04/14 スピードテスト用に修正
 """
 
 import pigpio
@@ -22,7 +23,7 @@ BACKLIGHT_PIN = 12
 # SPI設定
 SPI_BUS = 0
 SPI_DEVICE = 0
-SPI_SPEED_HZ = 4000000  # pigpioは4〜8MHz推奨
+SPI_SPEED_HZ = 8000000  # pigpioは4〜8MHz推奨
 
 # GPIO設定
 dc = DigitalOutputDevice(DC_PIN)
@@ -46,6 +47,7 @@ FONTSIZE      = 12
 FONTCOLOR     = "white"
 font = ImageFont.truetype("fonts-japanese-gothic.ttf", FONTSIZE)
 
+
 # コマンド送信
 def send_command(cmd):
     dc.off()
@@ -54,7 +56,7 @@ def send_command(cmd):
 # データ送信（チャンク処理付き）
 def send_data(data):
     dc.on()
-    chunk_size = 4096
+    chunk_size = 16384
     for i in range(0, len(data), chunk_size):
         pi.spi_xfer(spi, data[i:i+chunk_size])
 
@@ -169,14 +171,11 @@ def disp(mes,size=1,color='no'):
     global FONTSIZE
     global FONTCOLOR
     global disp_x,disp_y
-
     if size != 1:
         font = ImageFont.truetype("fonts-japanese-gothic.ttf", size)
         FONTSIZE = size
-
     if color != 'no':
         FONTCOLOR = color
-
     draw_text(mes)
     disp_y = disp_y + FONTSIZE
     draw_image()
@@ -186,12 +185,10 @@ def dsp_file(file_name):
     try:
         global image
         img = Image.open(file_name)
-
         if hasattr(Image, "Resampling"):
             img = img.resize((width, height), Image.Resampling.LANCZOS)
         else:
             img = img.resize((width, height), Image.ANTIALIAS)
-
         image = img
         draw_image()
 
@@ -200,8 +197,12 @@ def dsp_file(file_name):
     except Exception as e:
         print(f"エラー: {str(e)}")
 
+
 # ===== メイン処理（完全に元のまま）=====
 if __name__ == "__main__":
+
+    delay = 0.5
+    start_T = time.time()
 
     try:
         print("Initializing display...")
@@ -214,7 +215,7 @@ if __name__ == "__main__":
         print(FONTCOLOR,FONTSIZE)
         disp(mes)
 
-        time.sleep(2)
+        time.sleep(delay)
         color('white')
         size(26)
         print(FONTCOLOR,FONTSIZE)
@@ -223,18 +224,31 @@ if __name__ == "__main__":
         disp(mes)
         color('blue')
         disp(mes)
+        color('green')
+        disp(mes)
 
         print("Text drawn!")
 
-        time.sleep(2)
+        time.sleep(delay)
         imageClear()
+        disp(mes)
+        color('red')        
+        disp(mes)
+        color('blue')
+        disp(mes)
         color('green')
         disp(mes)
-        time.sleep(3)
+        time.sleep(delay)
 
         file_name = "photo/ph_1.JPG"
         dsp_file(file_name)
-        time.sleep(3)
+        time.sleep(delay)
+        file_name = "photo/ph_2.JPG"
+        dsp_file(file_name)
+        time.sleep(delay)
+        file_name = "photo/ph_3.JPG"
+        dsp_file(file_name)
+        time.sleep(delay)
         
         init('off')
         init('reset')
@@ -244,3 +258,6 @@ if __name__ == "__main__":
         set_backlight(False)
         pi.spi_close(spi)
         pi.stop()
+
+    end_T = time.time()
+    print(end_T-start_T)
