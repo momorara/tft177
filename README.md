@@ -48,6 +48,7 @@ Install出来たら、testプログラムを起動してみてください。<br
 対応ラズパイ 1A,1B,2B,3B,4B,Zero,Zero2で動作しますが、3B以上推奨です。<br>
 5Bは動作しません、3B未満では動作が遅いです。<br>
 2026/05/17 対応OS：Trixie版13.5(64bit)にて種動作確認しました。<br>
+2026/07/13 対応OS：Bookworm版12.14(64bit)にて動作確認しました。<br>
          
 <h4><<ライセンス>></h4>
 This project is licensed under the MIT License.
